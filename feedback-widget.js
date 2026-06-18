@@ -730,7 +730,13 @@
                 return cleanText;
             }
         }
-        return "Partie " + (el.tagName.toLowerCase()) + " (" + (el.className || "sans-classe") + ")";
+        
+        // Friendly mapping for structural tags
+        const tag = el.tagName.toLowerCase();
+        if (tag === 'header') return "En-tête (Header)";
+        if (tag === 'footer') return "Pied de page (Footer)";
+        
+        return "Section " + el.tagName.toUpperCase();
     }
 
     // Initialize Widget: scan page for sections
