@@ -82,13 +82,15 @@
             -webkit-backdrop-filter: blur(20px);
             border-radius: 24px;
             width: 90%;
-            max-width: 480px;
+            max-width: 500px;
             padding: 30px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             transform: translateY(20px) scale(0.95);
             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             font-family: 'Outfit', sans-serif;
             color: #f3f1f8;
+            display: flex;
+            flex-direction: column;
         }
         .feedback-overlay.active .feedback-modal {
             transform: translateY(0) scale(1);
@@ -97,7 +99,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .feedback-title {
             font-size: 18px;
@@ -120,14 +122,120 @@
         .feedback-close:hover {
             color: #ffffff;
         }
-        .feedback-group {
+        
+        .feedback-badge {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 13px;
+            color: #e2e8f0;
             margin-bottom: 18px;
+            align-self: flex-start;
+        }
+
+        /* Chat Discussion Thread */
+        .feedback-chat-container {
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 20px;
+        }
+        
+        /* Scrollbar styles */
+        .feedback-chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .feedback-chat-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 3px;
+        }
+        .feedback-chat-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        .feedback-chat-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Message Bubble */
+        .feedback-msg-bubble {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 10px 14px;
+            max-width: 85%;
+            align-self: flex-start;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Creator (David) message bubble align right */
+        .feedback-msg-bubble.creator {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: rgba(124, 58, 237, 0.25);
+            align-self: flex-end;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-msg-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .feedback-msg-author {
+            color: #ffffff;
+        }
+        .feedback-msg-bubble.creator .feedback-msg-author {
+            color: #c084fc;
+        }
+        .feedback-msg-date {
+            color: #a39eb9;
+        }
+        .feedback-msg-text {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #e2e8f0;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .feedback-chat-placeholder {
+            text-align: center;
+            color: #a39eb9;
+            font-size: 13px;
+            padding: 30px 10px;
+            font-style: italic;
+        }
+        
+        .feedback-chat-loading {
+            text-align: center;
+            color: #a39eb9;
+            font-size: 13px;
+            padding: 35px 10px;
+        }
+
+        /* Form styling */
+        .feedback-group {
+            margin-bottom: 14px;
         }
         .feedback-label {
             display: block;
             font-size: 12px;
             font-weight: 500;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #a39eb9;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -137,7 +245,7 @@
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
-            padding: 12px 14px;
+            padding: 10px 12px;
             color: #f3f1f8;
             font-family: inherit;
             font-size: 14px;
@@ -150,17 +258,17 @@
             box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
         }
         .feedback-textarea {
-            height: 120px;
+            height: 70px;
             resize: none;
         }
         .feedback-btn-submit {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             background: #7c3aed;
             border: none;
             border-radius: 12px;
             color: white;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -184,38 +292,6 @@
             transform: none;
             box-shadow: none;
         }
-        .feedback-badge {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 13px;
-            color: #e2e8f0;
-            margin-bottom: 15px;
-            display: inline-block;
-        }
-        .feedback-success {
-            text-align: center;
-            padding: 20px 0;
-            animation: fadeIn 0.4s ease-out;
-        }
-        .feedback-success-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-            display: inline-block;
-            animation: pulse 2s infinite;
-        }
-        .feedback-success-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 8px;
-        }
-        .feedback-success-desc {
-            color: #a39eb9;
-            font-size: 14px;
-            line-height: 1.5;
-        }
     `;
 
     const styleEl = document.createElement('style');
@@ -234,32 +310,103 @@
     modal.className = 'feedback-modal';
     overlay.appendChild(modal);
 
+    // Formatter utility for Date
+    function formatDate(dateString) {
+        try {
+            const date = new Date(dateString.replace(/-/g, '/')); // Handle Safari compatibility
+            return date.toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            return dateString;
+        }
+    }
+
+    // Helper to check if author is David / Creator
+    function isCreator(authorName) {
+        const lower = authorName.toLowerCase();
+        return lower.includes('david') || lower.includes('mussard') || lower.includes('admin') || lower.includes('créateur');
+    }
+
+    // Load and render discussion thread
+    async function loadDiscussion() {
+        const container = document.getElementById('feedbackChatContainer');
+        if (!container) return;
+
+        try {
+            const response = await fetch(`/feedback.php?section=${encodeURIComponent(activeSectionName)}`);
+            if (!response.ok) throw new Error("Could not fetch messages");
+            const messages = await response.json();
+
+            if (messages.length === 0) {
+                container.innerHTML = `<div class="feedback-chat-placeholder">Aucune remarque pour le moment. Laissez un message ci-dessous !</div>`;
+            } else {
+                container.innerHTML = messages.map(msg => {
+                    const isDev = isCreator(msg.name);
+                    return `
+                        <div class="feedback-msg-bubble ${isDev ? 'creator' : ''}">
+                            <div class="feedback-msg-meta">
+                                <span class="feedback-msg-author">${msg.name}</span>
+                                <span class="feedback-msg-date">${formatDate(msg.date)}</span>
+                            </div>
+                            <div class="feedback-msg-text">${msg.comment}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Auto scroll to bottom
+                container.scrollTop = container.scrollHeight;
+            }
+        } catch (e) {
+            container.innerHTML = `<div class="feedback-chat-placeholder" style="color: #ef4444;">Impossible de charger la discussion : ${e.message}</div>`;
+        }
+    }
+
     function showForm() {
-        const savedName = localStorage.getItem('feedback_user_name') || '';
+        // Resolve default name
+        let defaultName = '';
+        if (window.__feedbackConfig && window.__feedbackConfig.defaultName) {
+            defaultName = window.__feedbackConfig.defaultName;
+        }
+        const savedName = localStorage.getItem('feedback_user_name') || defaultName;
+
         modal.innerHTML = `
             <div class="feedback-header">
-                <h3 class="feedback-title">💬 Laisser une remarque</h3>
+                <h3 class="feedback-title">💬 Discussion de section</h3>
                 <button class="feedback-close" id="feedbackCloseBtn">&times;</button>
             </div>
             <div class="feedback-badge">
                 <strong>Section :</strong> <span id="feedbackActiveSectionName"></span>
             </div>
+            
+            <!-- Chat history -->
+            <div class="feedback-chat-container" id="feedbackChatContainer">
+                <div class="feedback-chat-loading">Chargement des échanges...</div>
+            </div>
+
+            <!-- Form input -->
             <form id="feedbackForm">
                 <div class="feedback-group">
-                    <label class="feedback-label" for="feedbackName">Votre Nom / Email</label>
+                    <label class="feedback-label" for="feedbackName">Votre Nom / Identifiant</label>
                     <input class="feedback-input" type="text" id="feedbackName" required placeholder="Ex: Client ou contact@..." value="${savedName}">
                 </div>
                 <div class="feedback-group">
-                    <label class="feedback-label" for="feedbackComment">Votre remarque</label>
-                    <textarea class="feedback-textarea" id="feedbackComment" required placeholder="Ce que vous aimeriez changer, corriger ou améliorer sur cette partie..."></textarea>
+                    <label class="feedback-label" for="feedbackComment">Votre remarque / réponse</label>
+                    <textarea class="feedback-textarea" id="feedbackComment" required placeholder="Tapez votre message ici..."></textarea>
                 </div>
                 <button class="feedback-btn-submit" type="submit" id="feedbackSubmitBtn">
-                    <span>Envoyer le retour</span>
+                    <span>Envoyer la remarque</span>
                 </button>
             </form>
         `;
 
         document.getElementById('feedbackActiveSectionName').textContent = activeSectionName;
+
+        // Load messages
+        loadDiscussion();
 
         // Form Submission
         document.getElementById('feedbackForm').addEventListener('submit', async function (e) {
@@ -277,7 +424,7 @@
             localStorage.setItem('feedback_user_name', name);
 
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span>Envoi en cours...</span>';
+            submitBtn.innerHTML = '<span>Envoi...</span>';
 
             try {
                 const response = await fetch('/feedback.php', {
@@ -293,34 +440,28 @@
                 });
 
                 if (response.ok) {
-                    showSuccess();
+                    // Clear comment textarea
+                    commentInput.value = '';
+                    // Reload chat thread immediately to display new message
+                    await loadDiscussion();
+                    // Reset submit button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>Envoyer la remarque</span>';
                 } else {
                     const errText = await response.text();
                     alert("Erreur lors de l'envoi : " + (errText || "Erreur serveur"));
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span>Envoyer le retour</span>';
+                    submitBtn.innerHTML = '<span>Envoyer la remarque</span>';
                 }
             } catch (err) {
                 alert("Erreur réseau : " + err.message);
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>Envoyer le retour</span>';
+                submitBtn.innerHTML = '<span>Envoyer la remarque</span>';
             }
         });
 
         // Close button handler
         document.getElementById('feedbackCloseBtn').addEventListener('click', closeModal);
-    }
-
-    function showSuccess() {
-        modal.innerHTML = `
-            <div class="feedback-success">
-                <span class="feedback-success-icon">🎉</span>
-                <h3 class="feedback-success-title">Remarque enregistrée !</h3>
-                <p class="feedback-success-desc">Merci pour votre retour. Votre remarque sur la section <strong>${activeSectionName}</strong> a été transmise à l'administrateur avec succès.</p>
-                <button class="feedback-btn-submit" style="margin-top: 25px;" id="feedbackCloseSuccessBtn">Fermer</button>
-            </div>
-        `;
-        document.getElementById('feedbackCloseSuccessBtn').addEventListener('click', closeModal);
     }
 
     function openModal(sectionName, sectionId) {
@@ -343,15 +484,12 @@
 
     // Helper to extract a readable section name
     function getSectionName(el) {
-        // Try custom attribute first
         if (el.getAttribute('data-feedback-name')) {
             return el.getAttribute('data-feedback-name');
         }
-        // Try ID
         if (el.id) {
             return el.id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
-        // Try first heading
         const h = el.querySelector('h1, h2, h3, h4');
         if (h) {
             const cleanText = h.textContent.trim().replace(/\s+/g, ' ');
@@ -359,16 +497,13 @@
                 return cleanText;
             }
         }
-        // Fallback
         return "Partie " + (el.tagName.toLowerCase()) + " (" + (el.className || "sans-classe") + ")";
     }
 
     // Initialize Widget: scan page for sections
     function init() {
-        // Find structural elements (sections, main, headers, footers, etc.)
         const targets = document.querySelectorAll('section, header:not(nav header), footer, main > div[id]');
         targets.forEach(el => {
-            // Skip elements that are nested inside other targets to avoid button stacking
             let parent = el.parentElement;
             let isNested = false;
             while (parent) {
@@ -380,7 +515,6 @@
             }
             if (isNested) return;
 
-            // Make parent relative
             el.classList.add('feedback-relative-parent');
 
             const sectionName = getSectionName(el);
@@ -401,7 +535,6 @@
         });
     }
 
-    // Wait for DOM to be ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
