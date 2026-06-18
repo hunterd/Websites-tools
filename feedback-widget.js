@@ -574,8 +574,12 @@
         commentInput.value = '';
 
         // Update buttons
-        submitBtn.querySelector('span').textContent = "Envoyer la remarque";
-        cancelBtn.style.display = 'none';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            const span = submitBtn.querySelector('span');
+            if (span) span.textContent = "Envoyer la remarque";
+        }
+        if (cancelBtn) cancelBtn.style.display = 'none';
     }
 
     function showForm() {
