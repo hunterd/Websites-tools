@@ -4,6 +4,13 @@
     if (window.__feedbackWidgetInitialized) return;
     window.__feedbackWidgetInitialized = true;
 
+    // Initialize Client ID
+    let clientId = localStorage.getItem('feedback_client_id');
+    if (!clientId) {
+        clientId = 'c_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('feedback_client_id', clientId);
+    }
+
     // Load Outfit font if not present
     if (!document.getElementById('feedback-font')) {
         const link = document.createElement('link');
@@ -172,9 +179,9 @@
             max-width: 85%;
             align-self: flex-start;
             animation: slideIn 0.3s ease-out;
+            position: relative;
         }
         
-        /* Creator (David) message bubble align right */
         .feedback-msg-bubble.creator {
             background: rgba(124, 58, 237, 0.1);
             border-color: rgba(124, 58, 237, 0.25);
@@ -227,6 +234,77 @@
             padding: 35px 10px;
         }
 
+        /* Edit Controls */
+        .feedback-msg-edit-btn {
+            background: none;
+            border: none;
+            color: #8b5cf6;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin-left: 6px;
+        }
+        .feedback-msg-edit-btn:hover {
+            color: #c084fc;
+            background: rgba(124, 58, 237, 0.15);
+        }
+
+        .feedback-msg-edited-badge {
+            font-size: 10px;
+            color: #a39eb9;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-left: 6px;
+            position: relative;
+            user-select: none;
+        }
+        .feedback-msg-edited-badge:hover {
+            color: #ffffff;
+        }
+
+        /* History Popup */
+        .feedback-history-popup {
+            display: none;
+            position: absolute;
+            top: 25px;
+            left: 0;
+            background: #181528;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 12px;
+            width: 250px;
+            z-index: 10000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            font-size: 11px;
+            color: #d1d5db;
+        }
+        .feedback-history-popup.active {
+            display: block;
+        }
+        .feedback-history-title {
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 5px;
+            margin-bottom: 6px;
+            color: #ffffff;
+        }
+        .feedback-history-item {
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+            padding: 5px 0;
+        }
+        .feedback-history-item:last-child {
+            border-bottom: none;
+        }
+        .feedback-history-meta {
+            color: #a39eb9;
+            margin-bottom: 2px;
+        }
+        .feedback-history-comment {
+            white-space: pre-wrap;
+        }
+
         /* Form styling */
         .feedback-group {
             margin-bottom: 14px;
@@ -261,8 +339,14 @@
             height: 70px;
             resize: none;
         }
+        
+        .feedback-form-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
         .feedback-btn-submit {
-            width: 100%;
+            flex: 1;
             padding: 12px;
             background: #7c3aed;
             border: none;
@@ -292,6 +376,22 @@
             transform: none;
             box-shadow: none;
         }
+
+        .feedback-btn-cancel {
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: #a39eb9;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .feedback-btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
     `;
 
     const styleEl = document.createElement('style');
@@ -301,6 +401,10 @@
     // Create Modal HTML elements
     let activeSectionName = "";
     let activeSectionId = "";
+    
+    // State variables for editing
+    let editingMessageId = null;
+    let messagesCache = [];
 
     const overlay = document.createElement('div');
     overlay.className = 'feedback-overlay';
@@ -313,7 +417,7 @@
     // Formatter utility for Date
     function formatDate(dateString) {
         try {
-            const date = new Date(dateString.replace(/-/g, '/')); // Handle Safari compatibility
+            const date = new Date(dateString.replace(/-/g, '/'));
             return date.toLocaleDateString('fr-FR', {
                 day: 'numeric',
                 month: 'short',
@@ -337,26 +441,79 @@
         if (!container) return;
 
         try {
-            const response = await fetch(`/feedback.php?section=${encodeURIComponent(activeSectionName)}`);
+            const response = await fetch(`/feedback.php?section=${encodeURIComponent(activeSectionName)}&client_id=${clientId}`);
             if (!response.ok) throw new Error("Could not fetch messages");
             const messages = await response.json();
+            messagesCache = messages; // cache them so we can query comments when editing
 
             if (messages.length === 0) {
                 container.innerHTML = `<div class="feedback-chat-placeholder">Aucune remarque pour le moment. Laissez un message ci-dessous !</div>`;
             } else {
                 container.innerHTML = messages.map(msg => {
                     const isDev = isCreator(msg.name);
+                    const hasHistory = msg.history && msg.history.length > 0;
+                    
+                    // Render edit history sub-items if present
+                    let historyHtml = '';
+                    if (hasHistory) {
+                        historyHtml = `
+                            <span class="feedback-msg-edited-badge" data-msg-id="${msg.id}">
+                                (modifié)
+                                <div class="feedback-history-popup" id="hist_${msg.id}">
+                                    <div class="feedback-history-title">Historique des modifications</div>
+                                    ${msg.history.map(h => `
+                                        <div class="feedback-history-item">
+                                            <div class="feedback-history-meta">Par <strong>${h.name}</strong> le ${formatDate(h.date)}</div>
+                                            <div class="feedback-history-comment">${h.comment}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </span>
+                        `;
+                    }
+
+                    // Render edit button if owned
+                    const editButtonHtml = msg.is_mine ? `
+                        <button type="button" class="feedback-msg-edit-btn" data-edit-msg-id="${msg.id}">Modifier</button>
+                    ` : '';
+
                     return `
-                        <div class="feedback-msg-bubble ${isDev ? 'creator' : ''}">
+                        <div class="feedback-msg-bubble ${isDev ? 'creator' : ''}" id="bubble_${msg.id}">
                             <div class="feedback-msg-meta">
                                 <span class="feedback-msg-author">${msg.name}</span>
-                                <span class="feedback-msg-date">${formatDate(msg.date)}</span>
+                                <div>
+                                    <span class="feedback-msg-date">${formatDate(msg.date)}</span>
+                                    ${historyHtml}
+                                    ${editButtonHtml}
+                                </div>
                             </div>
-                            <div class="feedback-msg-text">${msg.comment}</div>
+                            <div class="feedback-msg-text" id="text_${msg.id}">${msg.comment}</div>
                         </div>
                     `;
                 }).join('');
                 
+                // Attach event handlers for history badge toggles
+                container.querySelectorAll('.feedback-msg-edited-badge').forEach(badge => {
+                    badge.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        const msgId = this.getAttribute('data-msg-id');
+                        const popup = document.getElementById('hist_' + msgId);
+                        if (popup) {
+                            // Toggle
+                            popup.classList.toggle('active');
+                        }
+                    });
+                });
+
+                // Attach event handlers for edit buttons
+                container.querySelectorAll('.feedback-msg-edit-btn').forEach(btn => {
+                    btn.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        const msgId = this.getAttribute('data-edit-msg-id');
+                        enterEditMode(msgId);
+                    });
+                });
+
                 // Auto scroll to bottom
                 container.scrollTop = container.scrollHeight;
             }
@@ -365,8 +522,63 @@
         }
     }
 
+    // Enter Edit Mode
+    function enterEditMode(msgId) {
+        const msg = messagesCache.find(m => m.id === msgId);
+        if (!msg) return;
+
+        editingMessageId = msgId;
+        
+        // Highlight active message bubble
+        document.querySelectorAll('.feedback-msg-bubble').forEach(b => b.style.outline = 'none');
+        const bubble = document.getElementById('bubble_' + msgId);
+        if (bubble) {
+            bubble.style.outline = '2px solid #7c3aed';
+        }
+
+        // Fill in fields
+        const nameInput = document.getElementById('feedbackName');
+        const commentInput = document.getElementById('feedbackComment');
+        const submitBtn = document.getElementById('feedbackSubmitBtn');
+        const cancelBtn = document.getElementById('feedbackCancelBtn');
+
+        nameInput.value = msg.name;
+        commentInput.value = msg.comment;
+        commentInput.focus();
+
+        // Update buttons
+        submitBtn.querySelector('span').textContent = "Mettre à jour";
+        cancelBtn.style.display = 'block';
+    }
+
+    // Exit Edit Mode
+    function exitEditMode() {
+        editingMessageId = null;
+        
+        // Remove outline highlight
+        document.querySelectorAll('.feedback-msg-bubble').forEach(b => b.style.outline = 'none');
+
+        // Reset inputs to default values
+        let defaultName = '';
+        if (window.__feedbackConfig && window.__feedbackConfig.defaultName) {
+            defaultName = window.__feedbackConfig.defaultName;
+        }
+        const savedName = localStorage.getItem('feedback_user_name') || defaultName;
+
+        const nameInput = document.getElementById('feedbackName');
+        const commentInput = document.getElementById('feedbackComment');
+        const submitBtn = document.getElementById('feedbackSubmitBtn');
+        const cancelBtn = document.getElementById('feedbackCancelBtn');
+
+        nameInput.value = savedName;
+        commentInput.value = '';
+
+        // Update buttons
+        submitBtn.querySelector('span').textContent = "Envoyer la remarque";
+        cancelBtn.style.display = 'none';
+    }
+
     function showForm() {
-        // Resolve default name
         let defaultName = '';
         if (window.__feedbackConfig && window.__feedbackConfig.defaultName) {
             defaultName = window.__feedbackConfig.defaultName;
@@ -397,9 +609,12 @@
                     <label class="feedback-label" for="feedbackComment">Votre remarque / réponse</label>
                     <textarea class="feedback-textarea" id="feedbackComment" required placeholder="Tapez votre message ici..."></textarea>
                 </div>
-                <button class="feedback-btn-submit" type="submit" id="feedbackSubmitBtn">
-                    <span>Envoyer la remarque</span>
-                </button>
+                <div class="feedback-form-buttons">
+                    <button class="feedback-btn-cancel" type="button" id="feedbackCancelBtn" style="display: none;">Annuler</button>
+                    <button class="feedback-btn-submit" type="submit" id="feedbackSubmitBtn">
+                        <span>Envoyer la remarque</span>
+                    </button>
+                </div>
             </form>
         `;
 
@@ -407,6 +622,9 @@
 
         // Load messages
         loadDiscussion();
+
+        // Cancel Button Handler
+        document.getElementById('feedbackCancelBtn').addEventListener('click', exitEditMode);
 
         // Form Submission
         document.getElementById('feedbackForm').addEventListener('submit', async function (e) {
@@ -420,43 +638,49 @@
 
             if (!name || !comment) return;
 
-            // Save name for convenience next time
+            // Save name preference
             localStorage.setItem('feedback_user_name', name);
 
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span>Envoi...</span>';
+            submitBtn.innerHTML = '<span>Traitement...</span>';
+
+            const payload = {
+                client_id: clientId,
+                name: name,
+                comment: comment,
+                section: activeSectionName,
+                section_id: activeSectionId,
+                url: window.location.href
+            };
+
+            // If in edit mode, append edit action details
+            if (editingMessageId) {
+                payload.action = 'edit';
+                payload.id = editingMessageId;
+            }
 
             try {
                 const response = await fetch('/feedback.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: name,
-                        section: activeSectionName,
-                        section_id: activeSectionId,
-                        comment: comment,
-                        url: window.location.href
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
-                    // Clear comment textarea
-                    commentInput.value = '';
-                    // Reload chat thread immediately to display new message
+                    // Reset edit state and clear textarea
+                    exitEditMode();
+                    // Reload chat thread
                     await loadDiscussion();
-                    // Reset submit button
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span>Envoyer la remarque</span>';
                 } else {
                     const errText = await response.text();
-                    alert("Erreur lors de l'envoi : " + (errText || "Erreur serveur"));
+                    alert("Erreur lors de la soumission : " + (errText || "Erreur serveur"));
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span>Envoyer la remarque</span>';
+                    submitBtn.innerHTML = editingMessageId ? '<span>Mettre à jour</span>' : '<span>Envoyer la remarque</span>';
                 }
             } catch (err) {
                 alert("Erreur réseau : " + err.message);
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>Envoyer la remarque</span>';
+                submitBtn.innerHTML = editingMessageId ? '<span>Mettre à jour</span>' : '<span>Envoyer la remarque</span>';
             }
         });
 
@@ -473,6 +697,7 @@
 
     function closeModal() {
         overlay.classList.remove('active');
+        editingMessageId = null; // reset edit state when closed
     }
 
     // Close on click outside modal
@@ -480,6 +705,10 @@
         if (e.target === overlay) {
             closeModal();
         }
+        // Close history popups when clicking anywhere else
+        document.querySelectorAll('.feedback-history-popup').forEach(p => {
+            p.classList.remove('active');
+        });
     });
 
     // Helper to extract a readable section name
