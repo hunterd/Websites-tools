@@ -93,6 +93,18 @@ if ($method === 'POST') {
             exit;
         }
 
+        // Validate lengths
+        if (mb_strlen($comment) > 1500) {
+            http_response_code(400);
+            echo json_encode(["error" => "La remarque ne doit pas dépasser 1500 caractères."]);
+            exit;
+        }
+        if (mb_strlen($name) > 100) {
+            http_response_code(400);
+            echo json_encode(["error" => "Le nom ne doit pas dépasser 100 caractères."]);
+            exit;
+        }
+
         $feedbacks = get_feedbacks();
         $found_index = -1;
 
@@ -184,11 +196,40 @@ if ($method === 'POST') {
         exit;
     }
 
+    // Validate lengths
+    if (mb_strlen($comment) > 1500) {
+        http_response_code(400);
+        echo json_encode(["error" => "La remarque ne doit pas dépasser 1500 caractères."]);
+        exit;
+    }
+    if (mb_strlen($name) > 100) {
+        http_response_code(400);
+        echo json_encode(["error" => "Le nom ne doit pas dépasser 100 caractères."]);
+        exit;
+    }
+    if (mb_strlen($section) > 150) {
+        http_response_code(400);
+        echo json_encode(["error" => "Le nom de section est trop long."]);
+        exit;
+    }
+    if (mb_strlen($url) > 250) {
+        http_response_code(400);
+        echo json_encode(["error" => "L'URL est trop longue."]);
+        exit;
+    }
+
     if (!is_dir($private_dir)) {
         mkdir($private_dir, 0755, true);
     }
 
     $feedbacks = get_feedbacks();
+
+    // Validate total count
+    if (count($feedbacks) >= 200) {
+        http_response_code(400);
+        echo json_encode(["error" => "La limite maximale de 200 remarques pour ce site a été atteinte."]);
+        exit;
+    }
 
     function get_client_ip() {
         $ip_keys = array('HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR');

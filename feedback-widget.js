@@ -611,11 +611,11 @@
             <form id="feedbackForm">
                 <div class="feedback-group">
                     <label class="feedback-label" for="feedbackName">Votre Nom / Identifiant</label>
-                    <input class="feedback-input" type="text" id="feedbackName" required placeholder="Ex: Client ou contact@..." value="${savedName}">
+                    <input class="feedback-input" type="text" id="feedbackName" required maxlength="100" placeholder="Ex: Client ou contact@..." value="${savedName}">
                 </div>
                 <div class="feedback-group">
                     <label class="feedback-label" for="feedbackComment">Votre remarque / réponse</label>
-                    <textarea class="feedback-textarea" id="feedbackComment" required placeholder="Tapez votre message ici..."></textarea>
+                    <textarea class="feedback-textarea" id="feedbackComment" required maxlength="1500" placeholder="Tapez votre message ici..."></textarea>
                 </div>
                 <div class="feedback-form-buttons">
                     <button class="feedback-btn-cancel" type="button" id="feedbackCancelBtn" style="display: none;">Annuler</button>
@@ -645,6 +645,15 @@
             const comment = commentInput.value.trim();
 
             if (!name || !comment) return;
+
+            if (name.length > 100) {
+                alert("Le nom ne doit pas dépasser 100 caractères.");
+                return;
+            }
+            if (comment.length > 1500) {
+                alert("La remarque ne doit pas dépasser 1500 caractères.");
+                return;
+            }
 
             // Save name preference
             localStorage.setItem('feedback_user_name', name);
@@ -681,7 +690,18 @@
                     await loadDiscussion();
                 } else {
                     const errText = await response.text();
-                    alert("Erreur lors de la soumission : " + (errText || "Erreur serveur"));
+                    let errMsg = "Erreur serveur";
+                    try {
+                        const errJson = JSON.parse(errText);
+                        if (errJson && errJson.error) {
+                            errMsg = errJson.error;
+                        } else {
+                            errMsg = errText;
+                        }
+                    } catch (e) {
+                        errMsg = errText || "Erreur serveur";
+                    }
+                    alert("Erreur lors de la soumission : " + errMsg);
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = editingMessageId ? '<span>Mettre à jour</span>' : '<span>Envoyer la remarque</span>';
                 }
