@@ -264,45 +264,46 @@
             color: #ffffff;
         }
 
-        /* History Popup */
-        .feedback-history-popup {
+        /* Inline History Block */
+        .feedback-history-inline {
             display: none;
-            position: absolute;
-            top: 25px;
-            left: 0;
-            background: #181528;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-            padding: 12px;
-            width: 250px;
-            z-index: 10000;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.08);
             font-size: 11px;
-            color: #d1d5db;
+            color: #a39eb9;
+            text-align: left;
         }
-        .feedback-history-popup.active {
+        .feedback-history-inline.active {
             display: block;
         }
         .feedback-history-title {
             font-weight: 600;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 5px;
-            margin-bottom: 6px;
             color: #ffffff;
+            margin-bottom: 4px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .feedback-history-item {
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
-            padding: 5px 0;
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
         }
         .feedback-history-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
             border-bottom: none;
         }
         .feedback-history-meta {
-            color: #a39eb9;
             margin-bottom: 2px;
+            font-size: 10px;
         }
         .feedback-history-comment {
+            color: #d1d5db;
             white-space: pre-wrap;
+            padding-left: 6px;
+            border-left: 2px solid rgba(139, 92, 246, 0.3);
         }
 
         /* Form styling */
@@ -455,20 +456,21 @@
                     
                     // Render edit history sub-items if present
                     let historyHtml = '';
+                    let historyBlockHtml = '';
                     if (hasHistory) {
                         historyHtml = `
-                            <span class="feedback-msg-edited-badge" data-msg-id="${msg.id}">
-                                (modifié)
-                                <div class="feedback-history-popup" id="hist_${msg.id}">
-                                    <div class="feedback-history-title">Historique des modifications</div>
-                                    ${msg.history.map(h => `
-                                        <div class="feedback-history-item">
-                                            <div class="feedback-history-meta">Par <strong>${h.name}</strong> le ${formatDate(h.date)}</div>
-                                            <div class="feedback-history-comment">${h.comment}</div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </span>
+                            <span class="feedback-msg-edited-badge" data-msg-id="${msg.id}">(modifié)</span>
+                        `;
+                        historyBlockHtml = `
+                            <div class="feedback-history-inline" id="hist_${msg.id}">
+                                <div class="feedback-history-title">Historique des modifications</div>
+                                ${msg.history.map(h => `
+                                    <div class="feedback-history-item">
+                                        <div class="feedback-history-meta">Par <strong>${h.name}</strong> le ${formatDate(h.date)}</div>
+                                        <div class="feedback-history-comment">${h.comment}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
                         `;
                     }
 
@@ -488,6 +490,7 @@
                                 </div>
                             </div>
                             <div class="feedback-msg-text" id="text_${msg.id}">${msg.comment}</div>
+                            ${historyBlockHtml}
                         </div>
                     `;
                 }).join('');
@@ -497,10 +500,11 @@
                     badge.addEventListener('click', function (e) {
                         e.stopPropagation();
                         const msgId = this.getAttribute('data-msg-id');
-                        const popup = document.getElementById('hist_' + msgId);
-                        if (popup) {
-                            // Toggle
-                            popup.classList.toggle('active');
+                        const block = document.getElementById('hist_' + msgId);
+                        if (block) {
+                            block.classList.toggle('active');
+                            // Auto scroll to bottom when expanding history
+                            container.scrollTop = container.scrollHeight;
                         }
                     });
                 });
@@ -709,10 +713,6 @@
         if (e.target === overlay) {
             closeModal();
         }
-        // Close history popups when clicking anywhere else
-        document.querySelectorAll('.feedback-history-popup').forEach(p => {
-            p.classList.remove('active');
-        });
     });
 
     // Helper to extract a readable section name
